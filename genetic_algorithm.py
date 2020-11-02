@@ -1,40 +1,49 @@
+# Copyright 2020 Alexey Alexandrov <sks2311211@yandex.ru>
+
+import random
+
 import numpy as np
 from prettytable import PrettyTable
+
+ITERATIONS_COUNT = 100
+SPECIES_COUNT = 4
+MUTATE_CHANCE = 0.25
 
 
 class GeneticAlgorithm:
 
-    def __init__(self):
-        self.fit_func = lambda x, y: np.exp(- x ** 2) * np.exp(- y ** 2) / (1 + x ** 2 + y ** 2)
-        self.number_of_iterations = 100
-        self.bounds = [-2., 2., -2., 2.]
-        self.populations_count = 4
-        self.gen_number = 0
+    def __init__(self, fit_func, bounds):
+        self.fit_func = fit_func
+        self.iterations_count = ITERATIONS_COUNT
+        self.bounds = bounds
+        self.species_count = SPECIES_COUNT
+        self.population_number = 0
         self.population = self.InitPopulation()
 
         self.max_result = np.max(self.population[:, 2])
         self.mean_result = np.mean(self.population[:, 2])
 
     def PrintPopulation(self):
-        print(f"№ поколения: {self.gen_number}")
+        print(f"№ поколения: {self.population_number}")
         table = PrettyTable()
         table.field_names = ["X", "Y", "FIT"]
 
-        for i in range(self.populations_count):
+        for i in range(self.species_count):
             table.add_row(list(self.population[i]))
 
         print(table)
+        self.population_number += 1
 
         print(f"Максимальный результат: {self.max_result}")
         print(f"Средний результат: {self.mean_result}")
 
     def Iterating(self):
-        for i in range(self.number_of_iterations):
+        for i in range(self.iterations_count):
             self.Iterate()
             self.PrintPopulation()
 
     def InitPopulation(self):
-        population = np.random.rand(self.populations_count, 3)
+        population = np.random.rand(self.species_count, 3)
 
         population[:, 0] = self.bounds[0] + population[:, 0] * (self.bounds[1] - self.bounds[0])
         population[:, 1] = self.bounds[2] + population[:, 1] * (self.bounds[3] - self.bounds[2])
@@ -46,9 +55,10 @@ class GeneticAlgorithm:
     def Iterate(self):
         curr_population = self.population[self.population[:, 2].argsort()].copy()
 
-        delta = (np.random.rand(*self.population.shape) - 0.5) / 10
-        # TODO : проверка выхода за границы диапазона.
-        curr_population = curr_population + delta
+        # Mutate in 25% of population.
+        if random.uniform(0, 1) <= 0.25:
+            delta = (np.random.rand(*self.population.shape) - 0.5) / 10
+            curr_population = curr_population + delta
 
         x3 = curr_population[3][0]
         y3 = curr_population[3][1]
