@@ -5,14 +5,15 @@ import random
 import numpy as np
 from prettytable import PrettyTable
 
-ITERATIONS_COUNT = 100
+ITERATIONS_COUNT = 20
 SPECIES_COUNT = 4
 MUTATE_CHANCE = 0.25
+MUTATE_CONSTANT = 5
 
 
 class GeneticAlgorithm:
-
     def __init__(self, fit_func, bounds):
+        """Инициализация задачи по фит функции и границам диапазона."""
         self.fit_func = fit_func
         self.iterations_count = ITERATIONS_COUNT
         self.bounds = bounds
@@ -24,6 +25,7 @@ class GeneticAlgorithm:
         self.mean_result = np.mean(self.population[:, 2])
 
     def PrintPopulation(self):
+        """Вывод таблицы."""
         print(f"№ поколения: {self.population_number}")
         table = PrettyTable()
         table.field_names = ["X", "Y", "FIT"]
@@ -37,12 +39,17 @@ class GeneticAlgorithm:
         print(f"Максимальный результат: {self.max_result}")
         print(f"Средний результат: {self.mean_result}")
 
-    def Iterating(self):
+    def Solve(self):
+        """Решение задачи."""
         for i in range(self.iterations_count):
-            self.Iterate()
+            # Mutate in 25% of population.
+            if random.uniform(0, 1) <= 0.25:
+                self.Mutation()
+            self.CrossoverAndCalcFit()
             self.PrintPopulation()
 
     def InitPopulation(self):
+        """Начальная популяция."""
         population = np.random.rand(self.species_count, 3)
 
         population[:, 0] = self.bounds[0] + population[:, 0] * (self.bounds[1] - self.bounds[0])
@@ -52,13 +59,14 @@ class GeneticAlgorithm:
 
         return population
 
-    def Iterate(self):
-        curr_population = self.population[self.population[:, 2].argsort()].copy()
+    def Mutation(self):
+        """Мутация"""
+        delta = (np.random.rand(*self.population.shape) - 0.5) / MUTATE_CONSTANT
+        self.population = self.population + delta
 
-        # Mutate in 25% of population.
-        if random.uniform(0, 1) <= 0.25:
-            delta = (np.random.rand(*self.population.shape) - 0.5) / 10
-            curr_population = curr_population + delta
+    def CrossoverAndCalcFit(self):
+        """Кроссовер и вычисление значений фит функции."""
+        curr_population = self.population[self.population[:, 2].argsort()].copy()
 
         x3 = curr_population[3][0]
         y3 = curr_population[3][1]
