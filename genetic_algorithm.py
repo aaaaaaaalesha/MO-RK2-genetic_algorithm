@@ -1,14 +1,20 @@
 # Copyright 2020 Alexey Alexandrov <sks2311211@yandex.ru>
-
+import os
 import random
+
+import imageio
+from mpl_toolkits.mplot3d import Axes3D
+from matplotlib import cm
+import matplotlib.pyplot as plt
 
 import numpy as np
 from prettytable import PrettyTable
 
-ITERATIONS_COUNT = 20
+ITERATIONS_COUNT = 101
 SPECIES_COUNT = 4
 MUTATE_CHANCE = 0.25
 MUTATE_CONSTANT = 5
+ROUND_CONSTANT = 6
 
 
 class GeneticAlgorithm:
@@ -26,35 +32,41 @@ class GeneticAlgorithm:
 
     def PrintPopulation(self):
         """Вывод таблицы."""
-        print(f"№ поколения: {self.population_number_}")
+        print(f"Поколение: {self.population_number_}")
         table = PrettyTable()
         table.field_names = ["X", "Y", "FIT"]
 
         for i in range(self.species_count_):
-            table.add_row(list(self.population_[i]))
+            table.add_row(list(np.round(self.population_[i], ROUND_CONSTANT)))
 
-        print(table)
         self.population_number_ += 1
+        print(table)
 
-        print(f"Максимальный результат: {self.max_result_}")
-        print(f"Средний результат: {self.mean_result_}")
+        print(f"Максимальный результат: {round(self.max_result_, ROUND_CONSTANT)}")
+        print(f"Средний результат: {round(self.mean_result_, ROUND_CONSTANT)}")
 
     def Solve(self):
         """Решение задачи."""
         for i in range(self.iterations_count_):
+            self.VisualizePopulation()
+            self.CrossoverAndCalcFit()
+            self.PrintPopulation()
+
             # Mutate in 25% of population.
             if random.uniform(0, 1) <= 0.25:
                 self.Mutation()
-            self.CrossoverAndCalcFit()
-            self.PrintPopulation()
+
+        self.CreateGifVisualization()
 
     def InitPopulation(self):
         """Начальная популяция."""
         population = np.random.rand(self.species_count_, 3)
 
+        # Столбец X.
         population[:, 0] = self.bounds_[0] + population[:, 0] * (self.bounds_[1] - self.bounds_[0])
+        # Столбец Y.
         population[:, 1] = self.bounds_[2] + population[:, 1] * (self.bounds_[3] - self.bounds_[2])
-
+        # Столбец FIT.
         population[:, 2] = self.fit_func_(population[:, 0], population[:, 1])
 
         return population
@@ -90,3 +102,30 @@ class GeneticAlgorithm:
         self.mean_result_ = np.mean(new_population[:, 2])
 
         self.population_ = new_population.copy()
+
+    def VisualizePopulation(self):
+        if not os.path.exists('results/'):
+            os.makedirs('results/')
+        x0, x1 = self.bounds_[:2]
+        x = np.arange(x0, x1 + 0.1, 0.1)
+        y0, y1 = self.bounds_[2:]
+        y = np.arange(y0, y1 + 0.1, 0.1)
+        x, y = np.meshgrid(x, y)
+        z = self.fit_func_(x, y)
+
+        x_p, y_p = np.transpose(self.population_[:, :2])
+        plt.title(f"Поколение {self.population_number_}.")
+        plt.xlabel('x')
+        plt.ylabel('y')
+        plt.pcolormesh(x, y, z, cmap=cm.plasma)
+        plt.plot(x_p, y_p, marker='D', linestyle='', color='lime')
+        plt.savefig('results/' + str(self.population_number_) + '.png')
+        # plt.show()
+        plt.clf()
+
+    def CreateGifVisualization(self):
+        results = []
+        filenames = os.listdir("results/")
+        for filename in sorted(filenames, key=lambda x: int(os.path.splitext(x)[0])):
+            results.append(imageio.imread("results/" + filename))
+        imageio.mimsave('final_result.gif', results, duration=0.1)
