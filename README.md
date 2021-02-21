@@ -1,5 +1,7 @@
 # Рубежный Контроль №2. Исследование генетических алгоритмов в задачах поиска экстремумов.
 
+<img alt="Python" src="https://img.shields.io/badge/python%20-%2314354C.svg?&style=for-the-badge&logo=python&logoColor=white"/>
+
 #### График поверхности:
 
 ![graphic](https://user-images.githubusercontent.com/55093100/98445106-e9ce0900-2126-11eb-8582-f818c1d0ff89.png)
